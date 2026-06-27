@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculator preliminar risc - Audit intern</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --primary: #1f4e79;
+      --primary-dark: #163a59;
+      --low: #16803c;
+      --medium: #b7791f;
+      --high: #c2410c;
+      --critical: #b91c1c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 24px 32px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 900px;
+      color: #e5eef7;
+    }
+
+    main {
+      max-width: 1150px;
+      margin: 24px auto;
+      padding: 0 18px 40px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      margin-bottom: 18px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 20px;
+      color: var(--primary);
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+    }
+
+    textarea { min-height: 95px; resize: vertical; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .risk-row {
+      display: grid;
+      grid-template-columns: 1.1fr 0.55fr 1.2fr;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .risk-row:last-child { border-bottom: none; }
+
+    .help {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .weight {
+      display: inline-block;
+      font-size: 12px;
+      color: white;
+      background: var(--primary);
+      border-radius: 999px;
+      padding: 3px 8px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .score-box {
+      text-align: center;
+      padding: 22px;
+      border-radius: 14px;
+      border: 2px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .score-number {
+      font-size: 56px;
+      line-height: 1;
+      font-weight: 800;
+      margin: 8px 0;
+    }
+
+    .risk-level {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .low { color: var(--low); border-color: var(--low); }
+    .medium { color: var(--medium); border-color: var(--medium); }
+    .high { color: var(--high); border-color: var(--high); }
+    .critical { color: var(--critical); border-color: var(--critical); }
+
+    .result-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 9px 0;
+      font-size: 14px;
+    }
+
+    .result-line strong { color: var(--primary); }
+
+    .recommendation {
+      background: #f9fafb;
+      border-left: 4px solid var(--primary);
+      padding: 12px;
+      border-radius: 8px;
+      color: #374151;
+      margin-top: 10px;
+    }
+
+    .small-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .grid, .form-row, .risk-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body { background: white; }
+      header, .actions { display: none; }
+      main { margin: 0; max-width: none; }
+      .card { box-shadow: none; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Calculator preliminar al riscurilor - Audit intern</h1>
+    <p>Instrument orientativ pentru evaluarea initiala a riscului la potentialii clienti, pe baza unor criterii financiare, operationale, de conformitate, guvernanta, IT si reputatie.</p>
+  </header>
+
+  <main>
+    <div class="grid">
+      <section>
+        <div class="card">
+          <h2>Date client potential</h2>
+          <div class="form-row">
+            <div>
+              <label for="clientName">Denumire client</label>
+              <input id="clientName" placeholder="Ex.: ABC SRL" />
+            </div>
+            <div>
+              <label for="industry">Domeniu de activitate</label>
+              <input id="industry" placeholder="Ex.: productie, servicii, medical, financiar" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="turnover">Cifra de afaceri estimata</label>
+              <input id="turnover" placeholder="Ex.: 5.000.000 lei" />
+            </div>
+            <div>
+              <label for="employees">Numar angajati</label>
+              <input id="employees" type="number" min="0" placeholder="Ex.: 35" />
+            </div>
+          </div>
+          <div>
+            <label for="context">Context / observatii preliminare</label>
+            <textarea id="context" placeholder="Ex.: client nou, activitate reglementata, litigii, crestere rapida, schimbari de management etc."></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Evaluare criterii de risc</h2>
+
+          <div class="risk-row">
+            <div>
+              <h3>Risc financiar <span class="weight">20%</span></h3>
+              <div class="help">Pierderi, datorii, cash-flow, capitaluri proprii, dependenta de finantare.</div>
+            </div>
+            <select id="financial" class="risk-input">
+              <option value="1">1 - Foarte mic</option>
+              <option value="2">2 - Mic</option>
+              <option value="3" selected>3 - Moderat</option>
+              <option value="4">4 - Ridicat</option>
+              <option value="5">5 - Foarte ridicat</option>
+            </select>
+            <input id="financialObs" placeholder="Observatii risc financiar" />
+          </div>
+
+          <div class="risk-row">
+            <div>
+              <h3>Risc operational <span class="weight">20%</span></h3>
+              <div class="help">Procese, proceduri, personal-cheie, volum de tranzactii, dependente operationale.</div>
+            </div>
+            <select id="operational" class="risk-input">
+              <option value="1">1 - Foarte mic</option>
+              <option value="2">2 - Mic</option>
+              <option value="3" selected>3 - Moderat</option>
+              <option value="4">4 - Ridicat</option>
+              <option value="5">5 - Foarte ridicat</option>
+            </select>
+            <input id="operationalObs" placeholder="Observatii risc operational" />
+          </div>
+
+          <div class="risk-row">
+            <div>
+              <h3>Risc de conformitate <span class="weight">20%</span></h3>
+              <div class="help">Amenzi, controale, declaratii, litigii, cerinte legale sau reglementari speciale.</div>
+            </div>
+            <select id="compliance" class="risk-input">
+              <option value="1">1 - Foarte mic</option>
+              <option value="2">2 - Mic</option>
+              <option value="3" selected>3 - Moderat</option>
+              <option value="4">4 - Ridicat</option>
+              <option value="5">5 - Foarte ridicat</option>
+            </select>
+            <input id="complianceObs" placeholder="Observatii conformitate" />
+          </div>
+
+          <div class="risk-row">
+            <div>
+              <h3>Risc de guvernanta <span class="weight">15%</span></h3>
+              <div class="help">Organigrama, segregarea responsabilitatilor, decizii documentate, conflicte de interese.</div>
+            </div>
+            <select id="governance" class="risk-input">
+              <option value="1">1 - Foarte mic</option>
+              <option value="2">2 - Mic</option>
+              <option value="3" selected>3 - Moderat</option>
+              <option value="4">4 - Ridicat</option>
+              <option value="5">5 - Foarte ridicat</option>
+            </select>
+            <input id="governanceObs" placeholder="Observatii guvernanta" />
+          </div>
+
+          <div class="risk-row">
+            <div>
+              <h3>Risc IT / date <span class="weight">15%</span></h3>
+              <div class="help">Acces utilizatori, backup, securitate, modificari in sistem, dependenta de Excel.</div>
+            </div>
+            <select id="it" class="risk-input">
+              <option value="1">1 - Foarte mic</option>
+              <option value="2">2 - Mic</option>
+              <option value="3" selected>3 - Moderat</option>
+              <option value="4">4 - Ridicat</option>
+              <option value="5">5 - Foarte ridicat</option>
+            </select>
+            <input id="itObs" placeholder="Observatii IT / date" />
+          </div>
+
+          <div class="risk-row">
+            <div>
+              <h3>Risc reputational <span class="weight">10%</span></h3>
+              <div class="help">Presa negativa, actionari/administratori, domeniu sensibil, relatii comerciale neclare.</div>
+            </div>
+            <select id="reputation" class="risk-input">
+              <option value="1">1 - Foarte mic</option>
+              <option value="2">2 - Mic</option>
+              <option value="3" selected>3 - Moderat</option>
+              <option value="4">4 - Ridicat</option>
+              <option value="5">5 - Foarte ridicat</option>
+            </select>
+            <input id="reputationObs" placeholder="Observatii reputatie" />
+          </div>
+
+          <div class="actions">
+            <button class="btn-primary" onclick="calculateRisk()">Calculeaza risc</button>
+            <button class="btn-secondary" onclick="resetForm()">Reseteaza</button>
+            <button class="btn-secondary" onclick="window.print()">Printeaza / Salveaza PDF</button>
+          </div>
+        </div>
+      </section>
+
+      <aside>
+        <div class="card">
+          <h2>Rezultat evaluare</h2>
+          <div id="scoreBox" class="score-box medium">
+            <div>Scor final</div>
+            <div id="scoreNumber" class="score-number">60</div>
+            <div id="riskLevel" class="risk-level">Risc mediu</div>
+            <div id="riskMessage">Acceptare cu atentie si verificari suplimentare.</div>
+          </div>
+
+          <div id="clientSummary" class="small-note">Completeaza datele si apasa „Calculeaza risc”.</div>
+
+          <h3>Detaliere scor</h3>
+          <div id="breakdown"></div>
+
+          <div class="recommendation" id="recommendation">
+            Recomandare: se recomanda documentarea factorilor de risc si stabilirea unor conditii minime de acceptare a clientului.
+          </div>
+
+          <div class="small-note">
+            Nota: instrumentul este orientativ si nu inlocuieste rationamentul profesional, procedurile interne de acceptare a clientului sau cerintele metodologice aplicabile auditului intern.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const criteria = [
+      { id: 'financial', label: 'Financiar', weight: 0.20 },
+      { id: 'operational', label: 'Operational', weight: 0.20 },
+      { id: 'compliance', label: 'Conformitate', weight: 0.20 },
+      { id: 'governance', label: 'Guvernanta', weight: 0.15 },
+      { id: 'it', label: 'IT / date', weight: 0.15 },
+      { id: 'reputation', label: 'Reputational', weight: 0.10 }
+    ];
+
+    function calculateRisk() {
+      let weightedScore = 0;
+      let breakdownHtml = '';
+
+      criteria.forEach(item => {
+        const value = Number(document.getElementById(item.id).value);
+        const contribution = value * item.weight * 20;
+        weightedScore += contribution;
+
+        breakdownHtml += `
+          <div class="result-line">
+            <span>${item.label}</span>
+            <strong>${contribution.toFixed(1)} / ${(item.weight * 100).toFixed(0)}</strong>
+          </div>
+        `;
+      });
+
+      const finalScore = Math.round(weightedScore);
+      const result = getRiskResult(finalScore);
+
+      const scoreBox = document.getElementById('scoreBox');
+      scoreBox.className = 'score-box ' + result.className;
+      document.getElementById('scoreNumber').textContent = finalScore;
+      document.getElementById('riskLevel').textContent = result.level;
+      document.getElementById('riskMessage').textContent = result.message;
+      document.getElementById('breakdown').innerHTML = breakdownHtml;
+      document.getElementById('recommendation').textContent = 'Recomandare: ' + result.recommendation;
+
+      const clientName = document.getElementById('clientName').value || 'Client nespecificat';
+      const industry = document.getElementById('industry').value || 'Domeniu nespecificat';
+      const employees = document.getElementById('employees').value || 'n/a';
+      document.getElementById('clientSummary').textContent = `Client: ${clientName} | Domeniu: ${industry} | Angajati: ${employees}`;
+    }
+
+    function getRiskResult(score) {
+      if (score <= 30) {
+        return {
+          level: 'Risc redus',
+          className: 'low',
+          message: 'Client acceptabil din perspectiva evaluarii preliminare.',
+          recommendation: 'clientul poate fi acceptat, cu documentarea minima a factorilor analizati.'
+        };
+      }
+      if (score <= 60) {
+        return {
+          level: 'Risc mediu',
+          className: 'medium',
+          message: 'Acceptare cu atentie si verificari suplimentare.',
+          recommendation: 'se recomanda clarificari suplimentare si includerea zonelor cu risc mediu/ridicat in planificarea misiunii.'
+        };
+      }
+      if (score <= 80) {
+        return {
+          level: 'Risc ridicat',
+          className: 'high',
+          message: 'Acceptare doar cu conditii clare si aprobare interna.',
+          recommendation: 'se recomanda acceptarea numai dupa analiza documentata, limitarea ariei initiale si aprobarea responsabilului de misiune.'
+        };
+      }
+      return {
+        level: 'Risc critic',
+        className: 'critical',
+        message: 'Risc major. Acceptarea clientului trebuie analizata restrictiv.',
+        recommendation: 'se recomanda neacceptarea clientului sau aprobarea speciala, dupa obtinerea unor dovezi suplimentare convingatoare.'
+      };
+    }
+
+    function resetForm() {
+      document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+      document.querySelectorAll('select.risk-input').forEach(el => el.value = '3');
+      calculateRisk();
+    }
+
+    document.querySelectorAll('select.risk-input').forEach(el => {
+      el.addEventListener('change', calculateRisk);
+    });
+
+    calculateRisk();
+  </script>
+</body>
+</html>
